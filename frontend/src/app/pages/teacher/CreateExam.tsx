@@ -178,6 +178,15 @@ function mapApiQuestionToDraft(question: ApiQuestion): QuestionDraft {
   };
 }
 
+function extractApiErrorMessage(err: any, fallback: string): string {
+  const validationErrors = err?.response?.data?.errors;
+  if (validationErrors && typeof validationErrors === 'object') {
+    const messages = (Object.values(validationErrors) as string[][]).flat().join('. ');
+    return messages || fallback;
+  }
+  return err?.response?.data?.message ?? err?.message ?? fallback;
+}
+
 export default function CreateExam() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -775,6 +784,10 @@ export default function CreateExam() {
     setSuccess('');
 
     try {
+      if (!testName.trim()) {
+        throw new Error('Test name is required to create exam.');
+      }
+
       if (!startTime || !endTime) {
         throw new Error('Start time and end time are required.');
       }
@@ -815,7 +828,7 @@ export default function CreateExam() {
         }
       }
     } catch (err: any) {
-      setError(err?.response?.data?.message ?? err?.message ?? `Failed to ${isEditingExam ? 'update' : 'create'} exam.`);
+      setError(extractApiErrorMessage(err, `Failed to ${isEditingExam ? 'update' : 'create'} exam.`));
     } finally {
       setSubmitting(false);
     }
@@ -879,7 +892,7 @@ export default function CreateExam() {
         }
       }
     } catch (err: any) {
-      setError(err?.response?.data?.message ?? err?.message ?? `Failed to ${isEditingExam ? 'update' : 'save'} exam information.`);
+      setError(extractApiErrorMessage(err, `Failed to ${isEditingExam ? 'update' : 'save'} exam information.`));
     } finally {
       setSubmitting(false);
     }
